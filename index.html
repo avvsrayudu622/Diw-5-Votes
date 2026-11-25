@@ -11,7 +11,7 @@ button{flex:0 0 auto;cursor:pointer}#dl{background:var(--ac);color:#fff;border-c
 .chip b{cursor:pointer;font-weight:400;padding:0 6px}
 .cnt{color:var(--mut);margin:6px 0}
 .w{overflow-x:auto}table{border-collapse:collapse;width:100%}
-details{position:relative;flex:1 1 200px}summary{padding:8px 10px;border:1px solid var(--bd);border-radius:6px;cursor:pointer;list-style:none}#lnp{position:absolute;z-index:5;top:100%;left:0;margin-top:4px;width:min(320px,90vw);background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:8px;box-shadow:0 6px 20px rgba(0,0,0,.2)}#lnp input{width:100%;box-sizing:border-box;margin-bottom:6px}#lnlist{max-height:300px;overflow-y:auto}#lnlist label{display:flex;gap:8px;align-items:center;padding:4px 2px;cursor:pointer}#lnlist label span{margin-left:auto;color:var(--mut)}
+details{position:relative;flex:1 1 200px}summary{padding:8px 10px;border:1px solid var(--bd);border-radius:6px;cursor:pointer;list-style:none}#lnp{position:absolute;z-index:5;top:100%;left:0;margin-top:4px;width:min(320px,90vw);background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:8px;box-shadow:0 6px 20px rgba(0,0,0,.2)}#lnp{text-align:left}#lnp #lnf{width:100%;box-sizing:border-box;margin-bottom:6px}#lnlist{max-height:300px;overflow-y:auto}#lnlist label{display:flex;gap:8px;align-items:center;justify-content:flex-start;text-align:left;padding:4px 2px;cursor:pointer}#lnlist input{flex:0 0 auto;width:auto;margin:0}
 th,td{border:1px solid var(--bd);padding:6px 10px;text-align:left}th{background:var(--hd);cursor:pointer}</style></head><body>
 <div class="bar"><details id="lnd"><summary id="lns">Last names</summary><div id="lnp"><input id="lnf" placeholder="Find last name…"><div id="lnlist"></div></div></details>
 <select id="g"><option value="">All genders</option><option>Male</option><option>Female</option></select>
@@ -28,7 +28,7 @@ const keys=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]||a.localeCompare(b));
 const esc=t=>String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;');
 function chips(){$('chips').innerHTML=[...sel].map(k=>'<span class="chip">'+esc(k)+' ('+cnt[k]+')<b data-k="'+esc(k)+'">×</b></span>').join('')}
 function list(){const f=$('lnf').value.trim();
-$('lnlist').innerHTML=keys.filter(k=>!f||k.includes(f)).map(k=>'<label><input type="checkbox" value="'+esc(k)+'"'+(sel.has(k)?' checked':'')+'>'+esc(k)+'<span>'+cnt[k]+'</span></label>').join('');
+$('lnlist').innerHTML=keys.filter(k=>!f||k.includes(f)).map(k=>'<label><input type="checkbox" value="'+esc(k)+'"'+(sel.has(k)?' checked':'')+'>'+esc(k)+' ('+cnt[k]+')</label>').join('');
 $('lns').textContent=sel.size?'Last names ('+sel.size+' selected)':'Last names'}
 function r(){const g=$('g').value,q=$('q').value.trim();
 A=D.filter(x=>(!sel.size||sel.has(x[2]))&&(!g||x[3]===g)&&(!q||String(x[0]).includes(q)));
