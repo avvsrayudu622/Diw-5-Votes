@@ -16,7 +16,7 @@ th,td{border:1px solid var(--bd);padding:6px 10px;text-align:left}th{background:
 <div class="bar"><details id="lnd"><summary id="lns">Last names</summary><div id="lnp"><input id="lnf" placeholder="Find last name…"><div id="lnlist"></div></div></details>
 <select id="g"><option value="">All genders</option><option>Male</option><option>Female</option></select>
 <input id="q" placeholder="Search serial_number…" inputmode="numeric">
-<button id="clr">Clear last names</button><button id="dl">Download CSV</button></div>
+<button id="clr">Clear last names</button><button id="dl">Download PDF</button></div>
 <div id="chips"></div>
 <div class="cnt" id="c"></div>
 <div class="w"><table><thead><tr><th>No</th><th data-k="0">serial_number</th><th data-k="1">voter_name</th><th data-k="2">last name</th><th data-k="3">gender</th></tr></thead><tbody id="b"></tbody></table></div>
@@ -41,9 +41,39 @@ $('chips').addEventListener('click',e=>{const k=e.target.dataset&&e.target.datas
 $('clr').onclick=()=>{sel.clear();r()};document.addEventListener('click',e=>{if(!$('lnd').contains(e.target))$('lnd').open=false});
 ['g','q'].forEach(i=>$(i).addEventListener('input',r));
 document.querySelectorAll('th[data-k]').forEach(h=>h.onclick=()=>{const k=+h.dataset.k;sd=sk===k?-sd:1;sk=k;r()});
-$('dl').onclick=async()=>{const q=s=>'"'+String(s).replace(/"/g,'""')+'"';
-const txt='\ufeff'+['No,serial_number,voter_name,last name,gender'].concat(A.map((x,i)=>[i+1,...x].map(q).join(','))).join('\r\n');
+function makePDF(rows){
+const W=595,H=842,S=2,M=30,RH=16,TOP=62,PER=Math.floor((H-TOP-36)/RH),cols=[['No',34],['serial_number',78],['voter_name',250],['last name',112],['gender',61]];
+const pages=Math.max(1,Math.ceil(rows.length/PER)),F='"Noto Sans Telugu","Nirmala UI",Gautami,"Segoe UI",sans-serif',jpgs=[];
+const fit=(c,t,w)=>{t=String(t);if(c.measureText(t).width<=w)return t;while(t.length&&c.measureText(t+'…').width>w)t=t.slice(0,-1);return t+'…'};
+for(let p=0;p<pages;p++){
+const cv=document.createElement('canvas');cv.width=W*S;cv.height=H*S;const c=cv.getContext('2d');c.scale(S,S);
+c.fillStyle='#fff';c.fillRect(0,0,W,H);c.fillStyle='#000';c.textBaseline='middle';
+c.font='bold 13px '+F;c.fillText('Voter list - '+rows.length+' records',M,M);
+c.font='10px '+F;c.fillStyle='#666';c.fillText('Page '+(p+1)+' of '+pages,W-M-60,M);
+let y=TOP-RH/2;c.fillStyle='#eee';c.fillRect(M,TOP-RH,W-2*M,RH);c.fillStyle='#000';c.font='bold 10px '+F;
+let x=M;cols.forEach(k=>{c.fillText(k[0],x+4,y);x+=k[1]});
+c.font='10px '+F;
+rows.slice(p*PER,(p+1)*PER).forEach((r,i)=>{const yy=TOP+i*RH+RH/2;
+c.strokeStyle='#ccc';c.lineWidth=.5;c.beginPath();c.moveTo(M,TOP+(i+1)*RH);c.lineTo(W-M,TOP+(i+1)*RH);c.stroke();
+let xx=M;[p*PER+i+1,...r].forEach((t,j)=>{c.fillText(fit(c,t,cols[j][1]-8),xx+4,yy);xx+=cols[j][1]});});
+const u=atob(cv.toDataURL('image/jpeg',.85).split(',')[1]),b=new Uint8Array(u.length);for(let i=0;i<u.length;i++)b[i]=u.charCodeAt(i);jpgs.push(b)}
+const parts=[],offs=[];let len=0;const te=new TextEncoder();
+const add=x=>{const b=typeof x==='string'?te.encode(x):x;parts.push(b);len+=b.length};
+add('%PDF-1.4\n');
+offs[1]=len;add('1 0 obj\n<</Type/Catalog/Pages 2 0 R>>\nendobj\n');
+offs[2]=len;add('2 0 obj\n<</Type/Pages/Count '+pages+'/Kids['+jpgs.map((_,i)=>(3+3*i)+' 0 R').join(' ')+']>>\nendobj\n');
+jpgs.forEach((b,i)=>{const pg=3+3*i,ct=pg+1,im=pg+2,cs='q '+W+' 0 0 '+H+' 0 0 cm /Im0 Do Q';
+offs[pg]=len;add(pg+' 0 obj\n<</Type/Page/Parent 2 0 R/MediaBox[0 0 '+W+' '+H+']/Resources<</XObject<</Im0 '+im+' 0 R>>>>/Contents '+ct+' 0 R>>\nendobj\n');
+offs[ct]=len;add(ct+' 0 obj\n<</Length '+cs.length+'>>\nstream\n'+cs+'\nendstream\nendobj\n');
+offs[im]=len;add(im+' 0 obj\n<</Type/XObject/Subtype/Image/Width '+W*S+'/Height '+H*S+'/ColorSpace/DeviceRGB/BitsPerComponent 8/Filter/DCTDecode/Length '+b.length+'>>\nstream\n');add(b);add('\nendstream\nendobj\n')});
+const n=3+3*jpgs.length,xr=len;let x='xref\n0 '+n+'\n0000000000 65535 f \n';
+for(let i=1;i<n;i++)x+=String(offs[i]).padStart(10,'0')+' 00000 n \n';
+add(x+'trailer\n<</Size '+n+'/Root 1 0 R>>\nstartxref\n'+xr+'\n%%EOF');
+return new Blob(parts,{type:'application/pdf'})}
+$('dl').onclick=async()=>{const bt=$('dl');bt.disabled=true;bt.textContent='Preparing…';
+try{const blob=makePDF(A);
 let d=null;try{d=window.claude&&await window.claude.use('downloads')}catch(e){}
-if(d){try{await d.save({filename:'filtered_voters.csv',data:txt})}catch(e){}return}
-const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'text/csv;charset=utf-8'}));a.download='filtered_voters.csv';document.body.appendChild(a);a.click();a.remove()};
+if(d){try{await d.save({filename:'filtered_voters.pdf',data:blob})}catch(e){}}
+else{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='filtered_voters.pdf';document.body.appendChild(a);a.click();a.remove()}
+}finally{bt.disabled=false;bt.textContent='Download PDF'}};
 r();</script></body></html>
