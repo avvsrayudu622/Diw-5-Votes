@@ -36,8 +36,9 @@ $('chips').addEventListener('click',e=>{const k=e.target.dataset&&e.target.datas
 $('clr').onclick=()=>{sel.clear();r()};
 ['g','q'].forEach(i=>$(i).addEventListener('input',r));
 document.querySelectorAll('th[data-k]').forEach(h=>h.onclick=()=>{const k=+h.dataset.k;sd=sk===k?-sd:1;sk=k;r()});
-$('dl').onclick=()=>{const q=s=>'"'+String(s).replace(/"/g,'""')+'"';
-const lines=['No,serial_number,voter_name,last name,gender'].concat(A.map((x,i)=>[i+1,...x].map(q).join(',')));
-const b=new Blob(['\ufeff'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
-const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='filtered_voters.csv';document.body.appendChild(a);a.click();a.remove()};
+$('dl').onclick=async()=>{const q=s=>'"'+String(s).replace(/"/g,'""')+'"';
+const txt='\ufeff'+['No,serial_number,voter_name,last name,gender'].concat(A.map((x,i)=>[i+1,...x].map(q).join(','))).join('\r\n');
+let d=null;try{d=window.claude&&await window.claude.use('downloads')}catch(e){}
+if(d){try{await d.save({filename:'filtered_voters.csv',data:txt})}catch(e){}return}
+const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'text/csv;charset=utf-8'}));a.download='filtered_voters.csv';document.body.appendChild(a);a.click();a.remove()};
 r();</script></body></html>
